@@ -1,0 +1,76 @@
+# ---- Connections ----
+# Connection info is shared by all templates; only the service desk /
+# request type change per template.
+jira:
+  url: "https://jira.internal.example.com"
+  username: "jira-user"
+  api_token: "JIRA_API_TOKEN"
+
+jsm:
+  url: "https://jsm.internal.example.com"
+  username: "jsm-user"
+  api_token: "JSM_API_TOKEN"
+
+# ---- Git ----
+repo_path: "."
+
+# ---- Jira fields to fetch per issue ----
+# Fields are referenced by display name (case-insensitive lookup against the
+# Jira field catalogue). Custom-field ids like `customfield_10010` also work.
+# The spelling used here doubles as the placeholder name in templates.
+jira_fields:
+  - Summary
+  - Status
+  - Priority
+  - Assignee
+  - Story Points
+  - Team
+
+# ---- Attachment rules ----
+# Attachments are always downloaded from Jira and attached to the new JSM
+# ticket. Each referenced Jira issue must have:
+#   * at least one attachment whose filename starts with "testing"
+#   * at most one attachment whose filename starts with "execute"
+# Prefix match is case-insensitive. Violations abort the run and print every
+# offending Jira id.
+
+# ---- Templates ----
+# Each named template targets one JSM request type and carries its own
+# jsm_fields / jsm_field_aggregations. Pick one at runtime with
+# `--template <name>`.
+templates:
+
+  release:
+    service_desk_id: "10"
+    request_type_id: "25"
+    # Keys may be JSM field display names (resolved to ids at runtime via the
+    # request-type's field catalogue) or raw field ids like customfield_20001.
+    # String values may contain `{placeholder}` tokens filled from repeatable
+    # `--set KEY=VALUE` CLI arguments, e.g. `--set request_id=REQ-42`.
+    jsm_fields:
+      Summary: "Release deployment request {request_id}"
+      # Cascading select example (name or id both work):
+      # Category:
+      #   value: "Infrastructure"
+      #   child:
+      #     value: "Networking"
+    # Aggregation rules: render `template` once per Jira issue and join with
+    # `separator`. Placeholders are {key} plus every name in `jira_fields`.
+    jsm_field_aggregations:
+      Description:
+        template: "* [{key}] {Summary} — status={Status}, points={Story Points}"
+        separator: "\n"
+      Jira Keys:
+        template: "{key}"
+        separator: ", "
+
+  hotfix:
+    service_desk_id: "10"
+    request_type_id: "30"
+    jsm_fields:
+      Summary: "Hotfix {request_id}"
+      Priority: "High"
+    jsm_field_aggregations:
+      Description:
+        template: "- {key}: {Summary}"
+        separator: "\n"
