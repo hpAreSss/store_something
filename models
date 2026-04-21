@@ -1,0 +1,14 @@
+"""Shared data containers."""
+
+from dataclasses import dataclass, field
+
+
+@dataclass
+class JiraIssueInfo:
+    key: str
+    # Arbitrary Jira fields keyed by the Jira field id (e.g. "summary",
+    # "status", "customfield_10010"). Values are the raw Jira values
+    # (already normalized to strings by JiraClient).
+    fields: dict = field(default_factory=dict)
+    # each entry: {"filename": str, "content_url": str, "local_path": str}
+    attachments: list[dict] = field(default_factory=list)
